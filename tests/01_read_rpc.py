@@ -1,11 +1,11 @@
-# tests/base_rpc_test.py
+# tests/01_read_rpc.py
 import os
 import requests
 import json
 
-BASE_RPC_ENDPOINT = os.getenv("BASE_RPC_ENDPOINT")
+BASE_RPC_ENDPOINT = os.getenv("RPC_ENDPOINT")
 if not BASE_RPC_ENDPOINT:
-    raise EnvironmentError("BASE_RPC_ENDPOINT environment variable not set")
+    raise EnvironmentError("RPC_ENDPOINT environment variable not set")
 
 
 def test_base_rpc():

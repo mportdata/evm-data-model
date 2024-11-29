@@ -8,7 +8,6 @@ Dimensional data modelling with EVM RPC endpoints.
 
    Raw RPC response models
 
-   - [eth_getBalance](models/layer_1_brz/eth_getBalance.md)
    - [eth_getBlockByNumber](models/layer_1_brz/eth_getBlockByNumber.md)
    - [eth_getCode](models/layer_1_brz/eth_getCode.md)
    - [eth_getTransactionReceipt](models/layer_1_brz/eth_getTransactionReceipt.md)
