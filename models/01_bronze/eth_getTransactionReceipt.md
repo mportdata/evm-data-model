@@ -3,7 +3,7 @@ graph TD
     subgraph eth_getTransactionReceipt
         Receipt[Transaction Receipt] --> BlockHash[blockHash: hex]
         Receipt --> BlockNumber[blockNumber: hex]
-        Receipt --> ContractAddress[contractAddress: hex]
+        Receipt --> ContractAddress[contractAddress: address]
         Receipt --> CumulativeGasUsed[cumulativeGasUsed: hex]
         Receipt --> DepositNonce[depositNonce: hex]
         Receipt --> EffectiveGasPrice[effectiveGasPrice: hex]
@@ -19,7 +19,7 @@ graph TD
 
         Logs --> Log[Log Entry]
         Log --> LogAddress[address: hex]
-        Log --> LogTopics[topics: array of hex]
+        Log --> LogTopics[topics: array]
         Log --> LogData[data: hex]
         Log --> LogBlockNumber[blockNumber: hex]
         Log --> LogTransactionHash[transactionHash: hex]
