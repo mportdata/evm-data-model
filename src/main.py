@@ -1,48 +1,68 @@
 # src/main.py
-from layer_1_brz.client import RPCClient
-from layer_1_brz.writer import BronzeWriter
-
+from elt.export import RPCClient
+from elt.load import Loader
+from elt.transform_1_normalize import Blocks_Normalizer
+from storage.client import StorageClient
+from compute.client import ComputeClient
 import os
-from typing import List
-import logging
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Environment setup
 RPC_ENDPOINT = os.getenv("RPC_ENDPOINT")
+STORAGE_USER = os.getenv("MINIO_USER")
+STORAGE_PASSWORD = os.getenv("MINIO_PASSWORD")
+STORAGE_ENDPOINT = "localhost:9000"
+COMPUTE_ENDPOINT = "localhost:15002"
+
+# Validate environment variables
 if not RPC_ENDPOINT:
     raise EnvironmentError("RPC_ENDPOINT environment variable not set")
+if not STORAGE_USER or not STORAGE_PASSWORD:
+    raise EnvironmentError("STORAGE_USER and STORAGE_PASSWORD must be set")
 
 
 def main():
     # Initialize clients
-    rpc = RPCClient(RPC_ENDPOINT)
-    bronze = BronzeWriter()
+    storage_client = StorageClient(access_key=STORAGE_USER, secret_key=STORAGE_PASSWORD)
 
-    # Example: Load blocks 390000 to 390010
+    compute_client = ComputeClient(
+        compute_endpoint=COMPUTE_ENDPOINT,
+        storage_endpoint=STORAGE_ENDPOINT,
+        access_key=STORAGE_USER,
+        secret_key=STORAGE_PASSWORD,
+    )
+
+    rpc = RPCClient(RPC_ENDPOINT)
+    loader = Loader(storage_client.get_client())
+
+    # Initialize normalizer
+    blocks_normalizer = Blocks_Normalizer(
+        storage_client=storage_client.get_client(),
+        compute_client=compute_client.get_session(),
+    )
+
     start_block = 390000
     end_block = 390010
 
-    logger.info(f"Fetching blocks {start_block} to {end_block}...")
-    try:
-        # Get full block data including receipts and contract code
-        blocks = rpc.get_block_range(start_block, end_block)
+    print(f"Fetching blocks {start_block} to {end_block}...")
 
-        # Write to bronze layer
-        batch_id = f"{start_block}-{end_block}"
-        bronze.write_blocks(blocks, batch_id)
-        bronze.write_transactions(blocks, batch_id)
-        bronze.write_address_codes(blocks, batch_id)
+    block_number_range = range(start_block, end_block)
 
-        logger.info(
-            f"Successfully wrote block range {start_block}-{end_block} to bronze layer"
-        )
+    for block_number in block_number_range:
+        try:
+            block = rpc.get_block_by_number(block_number)
+            loader.write_block(block_number, block)
+        except Exception as e:
+            print(f"Error processing blocks: {e}")
+            raise
+    print(f"Successfully loaded blocks {start_block} to {end_block}")
 
-    except Exception as e:
-        logger.error(f"Error processing blocks: {e}")
-        raise
+    # Transform blocks to integration
+    blocks = []
+    for block_number in block_number_range:
+        block = blocks_normalizer.read_from_bronze(block_number)
+        blocks.append(block)
+
+    # Batch write to integration
+    blocks_normalizer.batch_write_to_silver(blocks)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 ```mermaid
 graph TD
     subgraph eth_getCode
-        Code[Code Response] --> CodeVal[result: hex]
+        Code[Code] --> CodeVal[result: hex]
     end
 ```

@@ -1,0 +1,85 @@
+# docker-compose.yml
+
+services:
+
+  # Storage Layer
+  minio:
+    image: minio/minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  mc:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set basedata http://minio:9000 minioadmin minioadmin;
+      mc mb basedata/staging;
+      mc mb basedata/integration;
+      mc mb basedata/analytics;
+      exit 0;
+      "
+
+  # Spark Cluster
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: spark-master
+    hostname: spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=8080
+    entrypoint:
+      - "bash"
+      - "-c"
+      - "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
+
+  spark-connect:
+      image: apache/spark:3.5.1
+      container_name: spark-connect
+      hostname: spark-connect
+      ports:
+        - "4040:4040"
+        - "15002:15002"
+      depends_on:
+        - spark-master
+      command:
+        - "bash" 
+        - "-c"
+        - >
+          echo "Downloading Spark Connect JAR..." &&
+          wget https://repo1.maven.org/maven2/org/apache/spark/spark-connect_2.12/3.5.1/spark-connect_2.12-3.5.1.jar -P /opt/spark/jars/ &&
+          echo "Starting Spark Connect Server..." &&
+          /opt/spark/sbin/start-connect-server.sh \
+          --master "spark://spark-master:7077" \
+          --jars "/opt/spark/jars/spark-connect_2.12-3.5.1.jar" \
+          --port "15002" \
+          --host "0.0.0.0" \
+          --verbose || (echo "Server failed to start. Showing logs:" && cat /opt/spark/logs/*) &&
+          tail -f /opt/spark/logs/*
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: spark-worker
+    hostname: spark-worker
+    depends_on:
+      - spark-master
+    entrypoint:
+      - "bash"
+      - "-c"
+      - "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 && tail -f /dev/null"
+
+volumes:
+  minio_data:
