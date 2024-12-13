@@ -1,10 +1,7 @@
-# docker-compose.yml
-
 services:
-
   # Storage Layer
   minio:
-    image: minio/minio
+    image: quay.io/minio/minio:RELEASE.2024-11-07T00-52-20Z
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -14,6 +11,11 @@ services:
     command: server /data --console-address ":9001"
     volumes:
       - minio_data:/data
+    healthcheck:
+      test: "bash -c '[[ \"$(exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /minio/health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | head -n 1)\" == *\"200 OK\"* ]] || exit 1'"
+      interval: 5s
+      timeout: 2s
+      retries: 15
 
   mc:
     image: minio/mc
@@ -23,11 +25,61 @@ services:
       /bin/sh -c "
       sleep 5;
       mc alias set basedata http://minio:9000 minioadmin minioadmin;
+      mc mb basedata/raw;
       mc mb basedata/staging;
       mc mb basedata/integration;
       mc mb basedata/analytics;
+      mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      mc mb myminio/demobucket --ignore-existing;
       exit 0;
       "
+
+  # Nessie Catalog
+  nessie:
+    image: ghcr.io/projectnessie/nessie:0.101.2
+    ports:
+      - "19120:19120"
+      - "9002:9000"
+    depends_on:
+      minio:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    environment:
+      - nessie.version.store.type=IN_MEMORY
+      - nessie.server.authentication.enabled=true
+      - quarkus.oidc.auth-server-url=http://keycloak:8080/realms/iceberg
+      - quarkus.oidc.client-id=client1
+      - quarkus.oidc.token.issuer=http://127.0.0.1:8080/realms/iceberg
+      - nessie.catalog.default-warehouse=warehouse
+      - nessie.catalog.warehouses.warehouse.location=s3://demobucket/
+      - nessie.catalog.service.s3.default-options.region=us-east-1
+      - nessie.catalog.service.s3.default-options.path-style-access=true
+      - nessie.catalog.service.s3.default-options.access-key=minioadmin
+      - nessie.catalog.service.s3.default-options.secret-key=minioadmin
+      - nessie.catalog.service.s3.default-options.endpoint=http://minio:9000/
+    healthcheck:
+      test: "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /q/health HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"
+      interval: 5s
+      timeout: 2s
+      retries: 15
+
+  # Keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    ports:
+      - "8081:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./authn-keycloak/config/iceberg-realm.json:/opt/keycloak/data/import/iceberg-realm.json
+    command: ["start-dev", "--import-realm", "--health-enabled=true"]
+    healthcheck:
+      test: "exec 3<>/dev/tcp/localhost/8080 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200 OK'"
+      interval: 5s
+      timeout: 2s
+      retries: 15
 
   # Spark Cluster
   spark-master:
@@ -35,7 +87,7 @@ services:
     container_name: spark-master
     hostname: spark-master
     ports:
-      - "8080:8080"
+      - "8082:8080"
       - "7077:7077"
     environment:
       - SPARK_MASTER_HOST=spark-master
@@ -47,28 +99,28 @@ services:
       - "/opt/spark/sbin/start-master.sh && tail -f /dev/null"
 
   spark-connect:
-      image: apache/spark:3.5.1
-      container_name: spark-connect
-      hostname: spark-connect
-      ports:
-        - "4040:4040"
-        - "15002:15002"
-      depends_on:
-        - spark-master
-      command:
-        - "bash" 
-        - "-c"
-        - >
-          echo "Downloading Spark Connect JAR..." &&
-          wget https://repo1.maven.org/maven2/org/apache/spark/spark-connect_2.12/3.5.1/spark-connect_2.12-3.5.1.jar -P /opt/spark/jars/ &&
-          echo "Starting Spark Connect Server..." &&
-          /opt/spark/sbin/start-connect-server.sh \
-          --master "spark://spark-master:7077" \
-          --jars "/opt/spark/jars/spark-connect_2.12-3.5.1.jar" \
-          --port "15002" \
-          --host "0.0.0.0" \
-          --verbose || (echo "Server failed to start. Showing logs:" && cat /opt/spark/logs/*) &&
-          tail -f /opt/spark/logs/*
+    image: apache/spark:3.5.1
+    container_name: spark-connect
+    hostname: spark-connect
+    ports:
+      - "4040:4040"
+      - "15002:15002"
+    depends_on:
+      - spark-master
+    command:
+      - "bash"
+      - "-c"
+      - >
+        echo "Downloading Spark Connect JAR..." &&
+        wget https://repo1.maven.org/maven2/org/apache/spark/spark-connect_2.12/3.5.1/spark-connect_2.12-3.5.1.jar -P /opt/spark/jars/ &&
+        echo "Starting Spark Connect Server..." &&
+        /opt/spark/sbin/start-connect-server.sh \
+        --master "spark://spark-master:7077" \
+        --jars "/opt/spark/jars/spark-connect_2.12-3.5.1.jar" \
+        --port "15002" \
+        --host "0.0.0.0" \
+        --verbose || (echo "Server failed to start. Showing logs:" && cat /opt/spark/logs/*) &&
+        tail -f /opt/spark/logs/*
 
   spark-worker:
     image: apache/spark:3.5.1

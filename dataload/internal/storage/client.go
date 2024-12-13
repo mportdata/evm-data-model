@@ -49,7 +49,7 @@ func (c *StorageClient) writeObject(objectName string, data interface{}) error {
 
 	_, err = c.PutObject(
 		context.Background(),
-		"staging",
+		"raw",
 		objectName,
 		bytes.NewReader(jsonData),
 		int64(len(jsonData)),
