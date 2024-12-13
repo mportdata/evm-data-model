@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"ingestion-service/internal/ingestion"
 	"log"
 	"os"
+
+	"dataload/internal/load"
 )
 
 func main() {
@@ -24,28 +25,27 @@ func main() {
 	minioEndpoint := os.Getenv("MINIO_ENDPOINT")
 	minioAccessKey := os.Getenv("MINIO_ACCESS_KEY")
 	minioSecretKey := os.Getenv("MINIO_SECRET_KEY")
-	minioBucket := os.Getenv("MINIO_BUCKET")
 
 	// Validate environment variables
 	if rpcEndpoint == "" {
 		log.Fatal("RPC_ENDPOINT environment variable not set")
 	}
-	if minioEndpoint == "" || minioAccessKey == "" || minioSecretKey == "" || minioBucket == "" {
+	if minioEndpoint == "" || minioAccessKey == "" || minioSecretKey == "" {
 		log.Fatal("One or more required MINIO environment variables not set")
 	}
 
-	// Initialize the stager
-	stager, err := ingestion.NewStager(rpcEndpoint, minioEndpoint, minioAccessKey, minioSecretKey)
+	// Initialize the loader
+	loader, err := load.NewLoader(rpcEndpoint, minioEndpoint, minioAccessKey, minioSecretKey)
 	if err != nil {
-		log.Fatalf("Failed to create Stager: %v", err)
+		log.Fatalf("Failed to create Loader: %v", err)
 	}
 
-	fmt.Printf("Stager successfully initialized: %v\n", stager)
+	fmt.Printf("Loader successfully initialized: %v\n", loader)
 
-	// Stage blocks in range
-	err = stager.StageBlocksInRange(*startBlock, *endBlock)
+	// Load blocks in range
+	err = loader.LoadBlocksInRange(*startBlock, *endBlock)
 	if err != nil {
-		log.Fatalf("Failed to stage blocks: %v", err)
+		log.Fatalf("Failed to load blocks: %v", err)
 	}
-	fmt.Printf("Successfully staged blocks in range %d to %d\n", *startBlock, *endBlock)
+	fmt.Printf("Successfully loaded blocks in range %d to %d\n", *startBlock, *endBlock)
 }

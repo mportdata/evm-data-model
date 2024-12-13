@@ -1,22 +1,22 @@
-package ingestion
+package load
 
 import (
+	"dataload/internal/extract"
+	"dataload/internal/storage"
 	"fmt"
-	"ingestion-service/internal/extractor"
-	"ingestion-service/internal/storage"
 	"runtime"
 	"sync"
 )
 
 // RelationalHandler handles interrelated requests for staging data
-type Stager struct {
-	RPCClient     *extractor.RPCClient
+type Loader struct {
+	RPCClient     *extract.RPCClient
 	StorageClient *storage.StorageClient
 }
 
-func NewStager(rpcEndpoint string, minioEndpoint string, minioAccessKey string, minioSecretKey string) (*Stager, error) {
+func NewLoader(rpcEndpoint string, minioEndpoint string, minioAccessKey string, minioSecretKey string) (*Loader, error) {
 	// Create RPC client
-	rpcClient, err := extractor.NewRPCClient(rpcEndpoint)
+	rpcClient, err := extract.NewRPCClient(rpcEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to establish new RPC client: %w", err)
 	}
@@ -27,62 +27,62 @@ func NewStager(rpcEndpoint string, minioEndpoint string, minioAccessKey string, 
 		return nil, fmt.Errorf("failed to establish new Storage client: %w", err)
 	}
 
-	// Return the new Stager instance
-	return &Stager{
+	// Return the new Loader instance
+	return &Loader{
 		RPCClient:     rpcClient,
 		StorageClient: storageClient,
 	}, nil
 }
 
-func (h *Stager) StageBlockAndRelatedData(blockNum uint64) error {
+func (l *Loader) LoadBlockAndRelatedData(blockNum uint64) error {
 	// Check if block already exists in storage
 	blockFileName := fmt.Sprintf("blocks/block_%010d.json", blockNum)
-	exists, err := h.StorageClient.Exists(blockFileName)
+	exists, err := l.StorageClient.Exists(blockFileName)
 	if err != nil {
 		return fmt.Errorf("failed to check existence of block file %s: %w", blockFileName, err)
 	}
 
 	if exists {
 		// Skip processing if block already exists
-		fmt.Printf("Block %d already staged. Skipping...\n", blockNum)
+		fmt.Printf("Block %d already loaded. Skipping...\n", blockNum)
 		return nil
 	}
 
 	// Fetch block
-	block, err := h.RPCClient.GetBlockByNumber(blockNum)
+	block, err := l.RPCClient.GetBlockByNumber(blockNum)
 	if err != nil {
 		return fmt.Errorf("failed to fetch block %d: %w", blockNum, err)
 	}
 
 	// Write block to storage
-	if err := h.StorageClient.WriteBlock(blockNum, block); err != nil {
+	if err := l.StorageClient.WriteBlock(blockNum, block); err != nil {
 		return fmt.Errorf("failed to write block %d: %w", blockNum, err)
 	}
 
-	// Fetch and stage related transactions and receipts
+	// Fetch and load related transactions and receipts
 	transactionHashes := block.GetTransactionHashes()
 	for _, txHash := range transactionHashes {
 		// Fetch transaction receipt
-		receipt, err := h.RPCClient.GetTransactionReceipt(txHash)
+		receipt, err := l.RPCClient.GetTransactionReceipt(txHash)
 		if err != nil {
 			return fmt.Errorf("failed to fetch receipt for tx %s: %w", txHash, err)
 		}
 
 		// Write transaction receipt to storage
-		if err := h.StorageClient.WriteTransactionReceipt(txHash, receipt); err != nil {
+		if err := l.StorageClient.WriteTransactionReceipt(txHash, receipt); err != nil {
 			return fmt.Errorf("failed to write receipt for tx %s: %w", txHash, err)
 		}
 
-		// Fetch and stage related addresses
+		// Fetch and load related addresses
 		addresses := receipt.GetAddresses()
 		for _, address := range addresses {
-			addressCode, err := h.RPCClient.GetAddressCode(address)
+			addressCode, err := l.RPCClient.GetAddressCode(address)
 			if err != nil {
 				return fmt.Errorf("failed to fetch address code for address %s: %w", address, err)
 			}
 
 			// Write address code to storage
-			if err := h.StorageClient.WriteAddressCode(address, addressCode); err != nil {
+			if err := l.StorageClient.WriteAddressCode(address, addressCode); err != nil {
 				return fmt.Errorf("failed to write address code for address %s: %w", address, err)
 			}
 		}
@@ -91,7 +91,7 @@ func (h *Stager) StageBlockAndRelatedData(blockNum uint64) error {
 	return nil
 }
 
-func (h *Stager) StageBlocksInRange(startBlock, endBlock uint64) error {
+func (l *Loader) LoadBlocksInRange(startBlock, endBlock uint64) error {
 	// Validate block range
 	if startBlock > endBlock {
 		return fmt.Errorf("invalid block range: startBlock (%d) is greater than endBlock (%d)", startBlock, endBlock)
@@ -112,7 +112,7 @@ func (h *Stager) StageBlocksInRange(startBlock, endBlock uint64) error {
 		go func() {
 			defer wg.Done()
 			for blockNum := range blockChan {
-				if err := h.StageBlockAndRelatedData(blockNum); err != nil {
+				if err := l.LoadBlockAndRelatedData(blockNum); err != nil {
 					errorChan <- fmt.Errorf("block %d: %w", blockNum, err)
 				}
 			}

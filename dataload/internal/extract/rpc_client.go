@@ -1,14 +1,13 @@
 // internal/extractor/rpc_client.go
-package extractor
+package extract
 
 import (
 	"bytes"
+	"dataload/internal/models"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-
-	"ingestion-service/internal/models"
 )
 
 type RPCClient struct {
