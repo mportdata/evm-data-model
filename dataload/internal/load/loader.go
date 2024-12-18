@@ -1,17 +1,20 @@
 package load
 
 import (
+	"context"
 	"dataload/internal/extract"
 	"dataload/internal/storage"
 	"fmt"
 	"runtime"
 	"sync"
+
+	"golang.org/x/time/rate"
 )
 
-// RelationalHandler handles interrelated requests for staging data
 type Loader struct {
 	RPCClient     *extract.RPCClient
 	StorageClient *storage.StorageClient
+	rateLimiter   *rate.Limiter
 }
 
 func NewLoader(rpcEndpoint string, minioEndpoint string, minioAccessKey string, minioSecretKey string) (*Loader, error) {
@@ -27,10 +30,13 @@ func NewLoader(rpcEndpoint string, minioEndpoint string, minioAccessKey string, 
 		return nil, fmt.Errorf("failed to establish new Storage client: %w", err)
 	}
 
-	// Return the new Loader instance
+	// Create rate limiter - 15 requests per second
+	rateLimiter := rate.NewLimiter(rate.Limit(15), 1)
+
 	return &Loader{
 		RPCClient:     rpcClient,
 		StorageClient: storageClient,
+		rateLimiter:   rateLimiter,
 	}, nil
 }
 
@@ -43,9 +49,14 @@ func (l *Loader) LoadBlockAndRelatedData(blockNum uint64) error {
 	}
 
 	if exists {
-		// Skip processing if block already exists
 		fmt.Printf("Block %d already loaded. Skipping...\n", blockNum)
 		return nil
+	}
+
+	// Wait for rate limit before RPC call
+	err = l.rateLimiter.Wait(context.Background())
+	if err != nil {
+		return fmt.Errorf("rate limiter error: %w", err)
 	}
 
 	// Fetch block
@@ -59,29 +70,39 @@ func (l *Loader) LoadBlockAndRelatedData(blockNum uint64) error {
 		return fmt.Errorf("failed to write block %d: %w", blockNum, err)
 	}
 
-	// Fetch and load related transactions and receipts
+	// Process transactions sequentially with rate limiting
 	transactionHashes := block.GetTransactionHashes()
 	for _, txHash := range transactionHashes {
+		// Wait for rate limit before RPC call
+		err = l.rateLimiter.Wait(context.Background())
+		if err != nil {
+			return fmt.Errorf("rate limiter error: %w", err)
+		}
+
 		// Fetch transaction receipt
 		receipt, err := l.RPCClient.GetTransactionReceipt(txHash)
 		if err != nil {
 			return fmt.Errorf("failed to fetch receipt for tx %s: %w", txHash, err)
 		}
 
-		// Write transaction receipt to storage
 		if err := l.StorageClient.WriteTransactionReceipt(txHash, receipt); err != nil {
 			return fmt.Errorf("failed to write receipt for tx %s: %w", txHash, err)
 		}
 
-		// Fetch and load related addresses
+		// Process addresses sequentially with rate limiting
 		addresses := receipt.GetAddresses()
 		for _, address := range addresses {
+			// Wait for rate limit before RPC call
+			err = l.rateLimiter.Wait(context.Background())
+			if err != nil {
+				return fmt.Errorf("rate limiter error: %w", err)
+			}
+
 			addressCode, err := l.RPCClient.GetAddressCode(address)
 			if err != nil {
 				return fmt.Errorf("failed to fetch address code for address %s: %w", address, err)
 			}
 
-			// Write address code to storage
 			if err := l.StorageClient.WriteAddressCode(address, addressCode); err != nil {
 				return fmt.Errorf("failed to write address code for address %s: %w", address, err)
 			}
