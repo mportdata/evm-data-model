@@ -1,5 +1,8 @@
 import duckdb
 
+# Connect to the database
+duckdb.connect("blockchain_data_warehouse.db") 
+
 # Configure S3/MinIO connection
 duckdb.sql(
     """

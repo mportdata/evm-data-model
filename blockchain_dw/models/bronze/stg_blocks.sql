@@ -1,0 +1,23 @@
+SELECT 
+    CAST(hash AS VARCHAR) as block_hash,
+    CAST(parentHash AS VARCHAR) as parent_hash,
+    CAST(number AS VARCHAR) as block_number,
+    CAST(timestamp AS VARCHAR) as block_timestamp,
+    CAST(miner AS VARCHAR) as miner_address,
+    CAST(gasLimit AS VARCHAR) as gas_limit,
+    CAST(gasUsed AS VARCHAR) as gas_used,
+    CAST(baseFeePerGas AS VARCHAR) as base_fee_per_gas,
+    CAST(difficulty AS VARCHAR) as difficulty,
+    CAST(size AS VARCHAR) as size,
+    CAST(nonce AS VARCHAR) as nonce,
+    CAST(mixHash AS VARCHAR) as mix_hash,
+    CAST(sha3Uncles AS VARCHAR) as sha3_uncles,
+    CAST(stateRoot AS VARCHAR) as state_root,
+    CAST(receiptsRoot AS VARCHAR) as receipts_root,
+    CAST(transactionsRoot AS VARCHAR) as transactions_root,
+    CAST(extraData AS VARCHAR) as extra_data,
+    CAST(logsBloom AS VARCHAR) as logs_bloom,
+    CAST(totalDifficulty AS VARCHAR) as total_difficulty,
+    transactions,
+    uncles
+FROM read_json_auto('s3://raw/blocks/*.json') 

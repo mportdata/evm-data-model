@@ -33,3 +33,6 @@ services:
       mc mb myminio/demobucket --ignore-existing;
       exit 0;
       "
+
+volumes:
+  minio_data:

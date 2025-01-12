@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: stg_blocks
+    description: "Raw blockchain blocks data"
+    columns:
+      - name: block_hash
+        description: "Hash of the block"
+      - name: parent_hash
+        description: "Hash of the parent block"
+      - name: block_number
+        description: "Block number in hex"
+      - name: transactions
+        description: "Array of transaction objects"
+
+  - name: stg_transactions
+    description: "Raw blockchain transactions data"
+    columns:
+      - name: tx_hash
+        description: "Hash of the transaction"
+        tests:
+          - unique
+      - name: block_hash
+        description: "Hash of the block containing this transaction"
+      - name: from_address
+        description: "Sender address"
+      - name: value
+        description: "Transaction value in hex"
+
+  - name: stg_transaction_receipts
+    description: "Raw transaction receipts data"
+    columns:
+      - name: tx_hash
+        description: "Hash of the transaction"
+      - name: block_hash
+        description: "Hash of the block"
+      - name: status
+        description: "Transaction status (might be null in bronze)" 

@@ -191,3 +191,125 @@ go.work.sum
 
 # env file
 .env
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+.tox/
+htmlcov/
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IDE - PyCharm
+.idea/
+*.iml
+*.iws
+.idea_modules/
+
+### Go ###
+# Binaries and objects
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Build
+bin/
+release/
+
+### DBT ###
+# DBT
+target/
+dbt_packages/
+logs/
+.user.yml
+profiles.yml
+
+# DuckDB
+*.db
+*.db.wal
+*.db-shm
+*.db-wal
+
+### Data & Secrets ###
+# Data files
+*.parquet
+*.csv
+*.json
+data/
+raw/
+processed/
+
+# Secrets and config
+.env*
+!.env.example
+*.pem
+*.key
+config.yaml
+secrets.yaml
+
+### Storage ###
+# MinIO local storage
+minio/
+warehouse/
+
+### OS ###
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### Temp Files ###
+*.log
+*.tmp
+*.temp
+*.swp
+*~
+
+### Project Specific ###
+# Compiled Go binary
+dataload
+blockchain_etl
+
+# Local dev config
+dev.env
+local_config.yaml

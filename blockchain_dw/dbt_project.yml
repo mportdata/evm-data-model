@@ -1,0 +1,38 @@
+# Name your project! Project names should contain only lowercase characters
+# and underscores. A good package name should reflect your organization's
+# name or the intended use of these models
+name: 'blockchain_dw'
+version: '1.0.0'
+config-version: 2
+
+profile: blockchain_dw
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+macro-paths: ["macros"]
+
+models:
+  blockchain_dw:
+    # Bronze layer configs
+    bronze:
+      +materialized: table
+      +schema: bronze
+
+    # Silver layer configs
+    silver:
+      +materialized: table
+      +schema: silver
+      fct_blocks:
+        +schema: silver
+      fct_transactions:
+        +schema: silver
+      fct_log_events:
+        +schema: silver
+      dim_addresses:
+        +schema: silver
+      dim_block_details:
+        +schema: silver
+      dim_transaction_receipts:
+        +schema: silver

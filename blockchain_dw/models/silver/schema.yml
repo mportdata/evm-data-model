@@ -1,0 +1,99 @@
+version: 2
+
+models:
+  - name: fct_blocks
+    description: "Fact table for blockchain blocks"
+    columns:
+      - name: block_hash
+        description: "Unique identifier for the block"
+        tests:
+          - unique
+          - not_null
+      - name: parent_hash
+        description: "Hash of the parent block"
+        tests:
+          - not_null
+      - name: block_number
+        description: "Sequential block number"
+        tests:
+          - not_null
+          - dbt_utils.sequential_values:
+              interval: 1
+      - name: block_timestamp
+        description: "Timestamp when block was mined"
+        tests:
+          - not_null
+      - name: miner
+        description: "Address of the miner who mined this block"
+        tests:
+          - not_null
+
+  - name: fct_transactions
+    description: "Fact table for blockchain transactions"
+    columns:
+      - name: tx_hash
+        description: "Unique identifier for the transaction"
+        tests:
+          - unique
+          - not_null
+      - name: block_hash
+        description: "Reference to the containing block"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_blocks')
+              field: block_hash
+      - name: from_address
+        description: "Address initiating the transaction"
+        tests:
+          - not_null
+      - name: to_address
+        description: "Recipient address of the transaction"
+      - name: value
+        description: "Amount of ETH transferred"
+        tests:
+          - not_null
+      - name: gas_used
+        description: "Amount of gas used by the transaction"
+      - name: gas_price
+        description: "Price per unit of gas"
+        tests:
+          - not_null
+      - name: transaction_index
+        description: "Index of transaction within the block"
+        tests:
+          - not_null
+      - name: tx_timestamp
+        description: "Timestamp of the block containing this transaction"
+        tests:
+          - not_null
+
+  - name: fct_log_events
+    description: "Fact table for transaction log events"
+    columns:
+      - name: tx_hash
+        description: "Reference to the transaction"
+        tests:
+          - not_null
+          - relationships:
+              to: ref('fct_transactions')
+              field: tx_hash
+      - name: log_index
+        description: "Index of the log within the transaction"
+        tests:
+          - not_null
+      - name: address
+        description: "Contract address that generated the event"
+        tests:
+          - not_null
+      - name: event_signature
+        description: "First topic (usually the event signature)"
+      - name: data
+        description: "ABI-encoded event data"
+      - name: block_number
+        description: "Block number containing this event"
+        tests:
+          - not_null
+    tests:
+      - unique:
+          column_name: "CONCAT(tx_hash, CAST(log_index AS VARCHAR))" 

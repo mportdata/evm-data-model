@@ -30,8 +30,14 @@ func main() {
 	if rpcEndpoint == "" {
 		log.Fatal("RPC_ENDPOINT environment variable not set")
 	}
-	if minioEndpoint == "" || minioAccessKey == "" || minioSecretKey == "" {
-		log.Fatal("One or more required MINIO environment variables not set")
+	if minioEndpoint == "" {
+		log.Fatal("MINIO_ENDPOINT environment variable not set")
+	}
+	if minioAccessKey == "" {
+		log.Fatal("MINIO_ACCESS_KEY environment variable not set")
+	}
+	if minioSecretKey == "" {
+		log.Fatal("MINIO_SECRET_KEY environment variable not set")
 	}
 
 	// Initialize the loader
