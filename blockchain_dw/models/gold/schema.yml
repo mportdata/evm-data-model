@@ -1,0 +1,199 @@
+version: 2
+
+models:
+  - name: blocks_metrics
+    description: "Aggregated metrics for each block"
+    columns:
+      - name: block_number
+        description: "Block number (height in the chain)"
+        tests:
+          - unique
+          - not_null
+      - name: block_timestamp
+        description: "When the block was mined"
+        tests:
+          - not_null
+      - name: miner
+        description: "Address of the block miner"
+        tests:
+          - not_null
+      - name: gas_used
+        description: "Total gas used in the block"
+        tests:
+          - not_null
+      - name: gas_limit
+        description: "Gas limit for the block"
+        tests:
+          - not_null
+      - name: gas_utilization_pct
+        description: "Percentage of gas limit utilized"
+        tests:
+          - not_null
+      - name: transaction_count
+        description: "Number of transactions in the block"
+        tests:
+          - not_null
+      - name: unique_addresses
+        description: "Number of unique addresses involved in transactions"
+        tests:
+          - not_null
+      - name: total_eth_transferred
+        description: "Total ETH transferred in the block"
+        tests:
+          - not_null
+      - name: avg_gas_price
+        description: "Average gas price for transactions in the block"
+        tests:
+          - not_null
+      - name: total_contract_calls
+        description: "Number of contract interactions in the block"
+        tests:
+          - not_null
+
+version: 2
+
+models:
+  - name: blocks_metrics
+    description: "Aggregated metrics for each block"
+    columns:
+      - name: block_number
+        description: "Block number (height in the chain)"
+        tests:
+          - unique
+          - not_null
+      - name: block_timestamp
+        description: "When the block was mined"
+        tests:
+          - not_null
+      - name: miner
+        description: "Address of the block miner"
+        tests:
+          - not_null
+      - name: gas_used
+        description: "Total gas used in the block"
+        tests:
+          - not_null
+      - name: gas_limit
+        description: "Gas limit for the block"
+        tests:
+          - not_null
+      - name: gas_utilization_pct
+        description: "Percentage of gas limit utilized"
+        tests:
+          - not_null
+      - name: transaction_count
+        description: "Number of transactions in the block"
+        tests:
+          - not_null
+      - name: unique_addresses
+        description: "Number of unique addresses involved in transactions"
+        tests:
+          - not_null
+      - name: total_eth_transferred
+        description: "Total ETH transferred in the block"
+        tests:
+          - not_null
+      - name: avg_gas_price
+        description: "Average gas price for transactions in the block"
+        tests:
+          - not_null
+      - name: total_contract_calls
+        description: "Number of contract interactions in the block"
+        tests:
+          - not_null
+
+  - name: address_activity
+    description: "Daily activity metrics for each address"
+    columns:
+      - name: address
+        description: "The Ethereum address"
+        tests:
+          - not_null
+      - name: activity_date
+        description: "Date of the activity"
+        tests:
+          - not_null
+      - name: address_type
+        description: "Type of address (contract or EOA)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['contract', 'eoa']
+      - name: transactions_sent
+        description: "Number of transactions sent by this address on this date"
+        tests:
+          - not_null
+      - name: transactions_received
+        description: "Number of transactions received by this address on this date"
+        tests:
+          - not_null
+      - name: contract_calls
+        description: "Number of contract interactions initiated by this address"
+        tests:
+          - not_null
+      - name: total_gas_spent
+        description: "Total gas spent by this address in wei"
+        tests:
+          - not_null
+      - name: total_eth_sent
+        description: "Total ETH sent by this address"
+        tests:
+          - not_null
+      - name: total_eth_received
+        description: "Total ETH received by this address"
+        tests:
+          - not_null
+      - name: unique_interactions
+        description: "Number of unique addresses interacted with"
+        tests:
+          - not_null
+      - name: first_activity
+        description: "Timestamp of first activity for this address"
+        tests:
+          - not_null
+      - name: last_activity
+        description: "Timestamp of most recent activity for this address"
+        tests:
+          - not_null
+    
+  - name: contract_usage
+    description: "Daily usage metrics for smart contracts"
+    columns:
+      - name: contract_address
+        description: "Address of the smart contract"
+        tests:
+          - not_null
+      - name: usage_date
+        description: "Date of the usage metrics"
+        tests:
+          - not_null
+      - name: total_calls
+        description: "Total number of calls to this contract"
+        tests:
+          - not_null
+      - name: unique_callers
+        description: "Number of unique addresses that called this contract"
+        tests:
+          - not_null
+      - name: failed_transactions
+        description: "Number of failed transactions"
+        tests:
+          - not_null
+      - name: successful_transactions
+        description: "Number of successful transactions"
+        tests:
+          - not_null
+      - name: total_eth_received
+        description: "Total ETH received by the contract"
+        tests:
+          - not_null
+      - name: total_gas_used
+        description: "Total gas consumed by contract calls"
+        tests:
+          - not_null
+      - name: most_called_function
+        description: "Function signature with the most calls"
+      - name: daily_active_users
+        description: "Number of unique addresses interacting with the contract"
+        tests:
+          - not_null

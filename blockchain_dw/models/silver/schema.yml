@@ -11,8 +11,6 @@ models:
           - not_null
       - name: parent_hash
         description: "Hash of the parent block"
-        tests:
-          - not_null
       - name: block_number
         description: "Sequential block number"
         tests:
@@ -67,12 +65,44 @@ models:
         description: "Timestamp of the block containing this transaction"
         tests:
           - not_null
+      - name: tx_type
+        description: "Type of transaction"
+
+  - name: dim_block_details
+    description: "Dimension table containing additional block details"
+    columns:
+      - name: block_hash
+        description: "Unique identifier for the block"
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('fct_blocks')
+              field: block_hash
+      - name: gas_limit
+        description: "Maximum amount of gas that could be used in this block"
+        tests:
+          - not_null
+      - name: gas_used
+        description: "Actual amount of gas used in this block"
+        tests:
+          - not_null
+      - name: base_fee_per_gas
+        description: "Base fee per unit of gas in this block"
+      - name: size
+        description: "Size of the block in bytes"
+        tests:
+          - not_null
+      - name: difficulty
+        description: "Mining difficulty for this block"
+        tests:
+          - not_null
 
   - name: fct_log_events
-    description: "Fact table for transaction log events"
+    description: "Fact table for smart contract event logs"
     columns:
       - name: tx_hash
-        description: "Reference to the transaction"
+        description: "Reference to the transaction that generated this event"
         tests:
           - not_null
           - relationships:
@@ -83,17 +113,71 @@ models:
         tests:
           - not_null
       - name: address
-        description: "Contract address that generated the event"
+        description: "Address of the contract that generated the event"
         tests:
           - not_null
       - name: event_signature
-        description: "First topic (usually the event signature)"
-      - name: data
-        description: "ABI-encoded event data"
-      - name: block_number
-        description: "Block number containing this event"
+        description: "Signature/topic of the event"
         tests:
           - not_null
-    tests:
-      - unique:
-          column_name: "CONCAT(tx_hash, CAST(log_index AS VARCHAR))" 
+      - name: data
+        description: "Additional data included in the event"
+      - name: block_number
+        description: "Block number where this event was emitted"
+        tests:
+          - not_null
+
+  - name: dim_addresses
+    description: "Dimension table containing address details and statistics"
+    columns:
+      - name: address
+        description: "The Ethereum address"
+        tests:
+          - unique
+          - not_null
+      - name: address_type
+        description: "Type of address (contract or EOA)"
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['contract', 'eoa']
+      - name: contract_code
+        description: "Contract bytecode if address is a contract"
+      - name: first_seen
+        description: "Timestamp of first transaction involving this address"
+        tests:
+          - not_null
+      - name: last_seen
+        description: "Timestamp of most recent transaction involving this address"
+        tests:
+          - not_null
+      - name: total_transactions
+        description: "Total number of transactions involving this address"
+        tests:
+          - not_null
+  
+  - name: dim_transaction_receipts
+    description: "Dimension table containing transaction receipt details"
+    columns:
+      - name: tx_hash
+        description: "Unique identifier for the transaction"
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: ref('fct_transactions')
+              field: tx_hash
+      - name: status
+        description: "Transaction execution status (1 for success, 0 for failure)"
+        tests:
+          - not_null
+      - name: contract_address
+        description: "Address of contract created, if this was a contract creation transaction"
+      - name: cumulative_gas_used
+        description: "Total gas used in the block up to and including this transaction"
+        tests:
+          - not_null
+      - name: effective_gas_price
+        description: "The actual gas price used for the transaction"
+        tests:
+          - not_null

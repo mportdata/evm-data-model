@@ -1,7 +1,7 @@
 ```mermaid
 erDiagram
     %% Core Fact Tables
-    fact_transactions {
+    fct_transactions {
         string tx_hash PK
         string block_hash FK
         string from_address FK
@@ -14,7 +14,7 @@ erDiagram
         string tx_type
     }
 
-    fact_blocks {
+    fct_blocks {
         string block_hash PK
         string parent_hash FK
         timestamp block_timestamp
@@ -22,7 +22,7 @@ erDiagram
         string miner FK
     }
 
-    fact_log_events {
+    fct_log_events {
         string tx_hash FK
         bigint log_index PK
         string address FK
@@ -59,10 +59,10 @@ erDiagram
     }
 
     %% Relationships
-    fact_transactions ||--o{ fact_log_events : "generates"
-    fact_transactions }|--|| dim_transaction_receipts : "has"
-    fact_transactions }|--|| fact_blocks : "belongs_to"
-    fact_transactions }|--|| dim_addresses : "from"
-    fact_transactions }|--|| dim_addresses : "to"
-    fact_blocks ||--|| dim_block_details : "has"
+    fct_transactions ||--o{ fct_log_events : "generates"
+    fct_transactions }|--|| dim_transaction_receipts : "has"
+    fct_transactions }|--|| fct_blocks : "belongs_to"
+    fct_transactions }|--|| dim_addresses : "from"
+    fct_transactions }|--|| dim_addresses : "to"
+    fct_blocks ||--|| dim_block_details : "has"
 ``` 

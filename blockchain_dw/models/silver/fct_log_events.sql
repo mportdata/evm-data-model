@@ -1,16 +1,17 @@
 WITH flattened_logs AS (
     SELECT 
         tx_hash,
-        l.value as log_data
-    FROM {{ ref('stg_transaction_receipts') }},
-    UNNEST(logs) as l
+        UNNEST(logs) as log_entry
+    FROM {{ ref('stg_transaction_receipts') }}
+    WHERE array_length(logs) > 0  -- Only process transactions with logs
 )
 
 SELECT 
     tx_hash,
-    CAST(REPLACE(log_data->>'logIndex', '0x', '') AS BIGINT) as log_index,
-    CAST(log_data->>'address' AS VARCHAR) as address,
-    log_data->>'topics'[0] as event_signature,
-    log_data->>'data' as data,
-    CAST(REPLACE(log_data->>'blockNumber', '0x', '') AS BIGINT) as block_number
+    CAST(REPLACE(log_entry->'logIndex', '0x', '') AS BIGINT) as log_index,
+    CAST(log_entry->'address' AS VARCHAR) as address,
+    CAST(log_entry->'topics'->1 AS VARCHAR) as event_signature,
+    CAST(log_entry->'data' AS VARCHAR) as data,
+    CAST(REPLACE(log_entry->'blockNumber', '0x', '') AS BIGINT) as block_number
 FROM flattened_logs
+WHERE tx_hash IS NOT NULL
