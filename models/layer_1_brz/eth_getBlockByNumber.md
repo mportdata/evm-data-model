@@ -18,7 +18,7 @@ graph TD
         Block --> Size[size: hex]
         Block --> StateRoot[stateRoot: hex]
         Block --> Timestamp[timestamp: hex]
-        Block --> TotalDifficulty[totalDifficult: hex]
+        Block --> TotalDifficulty[totalDifficulty: hex]
         Block --> Txs[transactions: array]
         Block --> TxsRoot[transactionsRoot: hex]
         Block --> Uncles[uncles: array]
