@@ -1,7 +1,7 @@
 ```mermaid
 graph TD
     subgraph eth_getBlockByNumber
-        Block[Block] --> BaseFee[baseFeePerGas: hex]
+        Block[Block] --> BaseFeePerGas[baseFeePerGas: hex]
         Block --> Difficulty[difficulty: hex]
         Block --> ExtraData[extraData: hex]
         Block --> GasLimit[gasLimit: hex]
@@ -41,5 +41,6 @@ graph TD
         Tx --> S[s: hex]
         Tx --> SourceHash[sourceHash: hex]
         Tx --> Mint[mint: hex]
+        Tx --> DepositReceiptVersion[depositReceiptVersion: hex]
     end
 ```

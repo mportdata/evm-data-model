@@ -6,6 +6,7 @@ graph TD
         Receipt --> ContractAddress[contractAddress: address]
         Receipt --> CumulativeGasUsed[cumulativeGasUsed: hex]
         Receipt --> DepositNonce[depositNonce: hex]
+        Receipt --> DepositReceiptNonce[depositReceiptVersion: hex]
         Receipt --> EffectiveGasPrice[effectiveGasPrice: hex]
         Receipt --> From[from: address]
         Receipt --> GasUsed[gasUsed: hex]
